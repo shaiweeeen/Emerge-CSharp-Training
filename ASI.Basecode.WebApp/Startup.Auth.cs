@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace ASI.Basecode.WebApp
 {
@@ -47,6 +48,14 @@ namespace ASI.Basecode.WebApp
                 options.TicketDataFormat = new CustomJwtDataFormat(SecurityAlgorithms.HmacSha256, _tokenValidationParameters, Configuration, tokenProviderOptionsFactory);
             });
 
+
+            this._services.AddMvc();
+
+            this._services.Configure<KestrelServerOptions>(options =>
+            {
+                options.AllowSynchronousIO = true;
+            });
+
             this._services.AddAuthorization(options =>
             {
                 options.AddPolicy("RequireAuthenticatedUser", policy =>
@@ -55,10 +64,10 @@ namespace ASI.Basecode.WebApp
                 });
             });
 
-            this._services.AddMvc(options =>
+            /*this._services.AddMvc(options =>
             {
                 options.Filters.Add(new AuthorizeFilter("RequireAuthenticatedUser"));
-            });
+            });*/
         }
     }
 }

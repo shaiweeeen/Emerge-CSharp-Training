@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using ASI.Basecode.Data.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using ASi.Basecode.Data.Models;
+using System.Linq;
 
 namespace ASI.Basecode.Data
 {
-    public partial class AsiBasecodeDBContext : DbContext
+    public partial class AsiBasecodeDBContext : IdentityDbContext<IdentityUser>
     {
         public AsiBasecodeDBContext()
         {
@@ -18,9 +22,11 @@ namespace ASI.Basecode.Data
         }
 
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<RefreshToken> RefreshToken { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>(entity =>
+            base.OnModelCreating(modelBuilder);
+            /*modelBuilder.Entity<User>(entity =>
             {
                 entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D5F4A160F")
                     .IsUnique();
@@ -55,7 +61,19 @@ namespace ASI.Basecode.Data
                     .IsUnicode(false);
             });
 
-            OnModelCreatingPartial(modelBuilder);
+            OnModelCreatingPartial(modelBuilder);*/
+        }
+
+        public void InsertNew(RefreshToken token)
+        {
+            var tokenModel = RefreshToken.SingleOrDefault(i => i.Username == token.Username);
+            if (tokenModel != null)
+            {
+                RefreshToken.Remove(tokenModel);
+                SaveChanges();
+            }
+            RefreshToken.Add(token);
+            SaveChanges();
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

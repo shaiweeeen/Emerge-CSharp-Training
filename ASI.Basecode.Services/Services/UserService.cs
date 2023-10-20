@@ -1,12 +1,17 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Data.Repositories;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.Manager;
 using ASI.Basecode.Services.ServiceModels;
 using AutoMapper;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using static ASI.Basecode.Resources.Constants.Enums;
 
 namespace ASI.Basecode.Services.Services
@@ -16,10 +21,15 @@ namespace ASI.Basecode.Services.Services
         private readonly IUserRepository _repository;
         private readonly IMapper _mapper;
 
-        public UserService(IUserRepository repository, IMapper mapper)
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+
+        public UserService(IUserRepository repository, IMapper mapper, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _mapper = mapper;
             _repository = repository;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         public LoginResult AuthenticateUser(string userId, string password, ref User user)
@@ -32,7 +42,7 @@ namespace ASI.Basecode.Services.Services
             return user != null ? LoginResult.Success : LoginResult.Failed;
         }
 
-        public void AddUser(UserViewModel model)
+        public async void AddUser(UserViewModel model)
         {
             var user = new User();
             if (!_repository.UserExists(model.UserId))
@@ -44,12 +54,38 @@ namespace ASI.Basecode.Services.Services
                 user.CreatedBy = System.Environment.UserName;
                 user.UpdatedBy = System.Environment.UserName;
 
+
+                var identityUser = new IdentityUser();
+                identityUser.Email = user.UserId;
+                identityUser.UserName = user.UserId;
+                var result = await _userManager.CreateAsync(identityUser, user.Password);
+                var userRole = _roleManager.FindByNameAsync("User").Result;
+
+                if (userRole != null)
+                {
+                    await _userManager.AddToRoleAsync(identityUser, userRole.Name);
+                }
                 _repository.AddUser(user);
             }
             else
             {
                 throw new InvalidDataException(Resources.Messages.Errors.UserExists);
             }
+        }
+
+        public Task<IdentityUser> FindUserAsync(string userName, string password)
+        {
+            return _repository.FindUserAsync(userName, password);
+        }
+
+        public IdentityUser FindUser(string userName)
+        {
+            return _repository.FindUser(userName);
+        }
+
+        public async Task<IdentityResult> CreateRole(string roleName)
+        {
+            return await _repository.CreateRole(roleName);
         }
     }
 }
