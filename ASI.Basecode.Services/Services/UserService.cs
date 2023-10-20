@@ -55,7 +55,7 @@ namespace ASI.Basecode.Services.Services
                 user.UpdatedBy = System.Environment.UserName;
 
 
-                var identityUser = new IdentityUser();
+                /*var identityUser = new IdentityUser();
                 identityUser.Email = user.UserId;
                 identityUser.UserName = user.UserId;
                 var result = await _userManager.CreateAsync(identityUser, user.Password);
@@ -64,7 +64,7 @@ namespace ASI.Basecode.Services.Services
                 if (userRole != null)
                 {
                     await _userManager.AddToRoleAsync(identityUser, userRole.Name);
-                }
+                }*/
                 _repository.AddUser(user);
             }
             else
