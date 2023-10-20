@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using static ASI.Basecode.Resources.Constants.Constants;
 using static ASI.Basecode.Resources.Constants.Enums;
 
 namespace ASI.Basecode.WebApp.Controllers
@@ -29,6 +30,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly UserManager<IdentityUser> _userManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountController"/> class.
@@ -51,7 +53,8 @@ namespace ASI.Basecode.WebApp.Controllers
                             IUserService userService,
                             TokenValidationParametersFactory tokenValidationParametersFactory,
                             TokenProviderOptionsFactory tokenProviderOptionsFactory,
-                            RoleManager<IdentityRole> roleManager) : base(httpContextAccessor, loggerFactory, configuration, mapper)
+                            RoleManager<IdentityRole> roleManager,
+                            UserManager<IdentityUser> userManager) : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._sessionManager = new SessionManager(this._session);
             this._signInManager = signInManager;
@@ -60,6 +63,7 @@ namespace ASI.Basecode.WebApp.Controllers
             this._appConfiguration = configuration;
             this._userService = userService;
             this._roleManager = roleManager;
+            this._userManager = userManager;
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             this._session.SetString("HasSession", "Exist");
 
-            User user = null;
+            ASI.Basecode.Data.Models.User user = null;
             var loginResult = _userService.AuthenticateUser(model.UserId, model.Password, ref user);
             if (loginResult == LoginResult.Success)
             {
@@ -137,11 +141,27 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [AllowAnonymous]
-        public IActionResult Register(UserViewModel model)
+        public async Task<IActionResult> Register(UserViewModel model)
         {
             try
             {
-                _userService.AddUser(model);
+                var identityUser = new IdentityUser();
+                identityUser.Email = model.UserId;
+                identityUser.UserName = model.UserId;
+                var result = await _userManager.CreateAsync(identityUser, model.Password);
+
+                if(result.Succeeded)
+                {
+                    _userService.AddUser(model);
+
+                    var userRole = _roleManager.FindByNameAsync("User").Result;
+
+                    if (userRole != null)
+                    {
+                        await _userManager.AddToRoleAsync(identityUser, userRole.Name);
+                    }
+                }
+                
 
                 return RedirectToAction("Login", "Account");
             }
@@ -149,7 +169,7 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 TempData["ErrorMessage"] = ex.Message;
             }
-            catch(Exception ex)
+            catch(System.Exception ex)
             {
                 TempData["ErrorMessage"] = Resources.Messages.Errors.ServerError;
             }

@@ -25,7 +25,7 @@ namespace ASI.Basecode.Services.Services
 
         public void CreateCar(CarModel carModel)
         {
-            var count = RetrieveAll().Count();
+            
             _carRepository.CreateCar(carModel);
             //var list = new List<CarModel>();
             //return _carRepository.RetrieveAll().ToList();

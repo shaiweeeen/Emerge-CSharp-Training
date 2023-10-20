@@ -28,7 +28,6 @@ namespace ASI.Basecode.Services.Services
         {
             _mapper = mapper;
             _repository = repository;
-            _userManager = userManager;
             _roleManager = roleManager;
         }
 
@@ -54,17 +53,6 @@ namespace ASI.Basecode.Services.Services
                 user.CreatedBy = System.Environment.UserName;
                 user.UpdatedBy = System.Environment.UserName;
 
-
-                /*var identityUser = new IdentityUser();
-                identityUser.Email = user.UserId;
-                identityUser.UserName = user.UserId;
-                var result = await _userManager.CreateAsync(identityUser, user.Password);
-                var userRole = _roleManager.FindByNameAsync("User").Result;
-
-                if (userRole != null)
-                {
-                    await _userManager.AddToRoleAsync(identityUser, userRole.Name);
-                }*/
                 _repository.AddUser(user);
             }
             else
